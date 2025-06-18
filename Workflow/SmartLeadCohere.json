@@ -1,0 +1,301 @@
+{
+  "name": "SmartLeadCohere",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "smartlead-pro",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -160
+      ],
+      "webhookId": "smartlead-pro",
+      "id": "9f710a98-2d51-4196-8370-6d77b146f279"
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "requestMethod": "POST",
+        "url": "https://api.cohere.ai/v1/generate",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={\n  \"model\": \"command-r-plus\",\n  \"prompt\": \"You are an AI lead scoring assistant. Score this lead on a scale of 1 to 10 for its relevance to AI solutions. Just give a number.\\nMessage: {{ $json[\"Message\"] }}\",\n  \"max_tokens\": 5,\n  \"temperature\": 0.1\n}\n"
+      },
+      "name": "Cohere Classifier",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        -400
+      ],
+      "id": "92a7757a-e361-4e12-896f-07fc2cd9dda6",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "OOZmQPN7cp4xdIRK",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "prompt",
+              "value": "You are a brutally honest enterprise AI trained to score how likely a lead is to convert into a paying customer.\n\n🔍 Your job:\nAnalyze the message below and score it strictly on a scale of 1 to 10 based ONLY on:\n\nSpecificity of problem\n\nMention of business needs or pain points\n\nBuying urgency\n\nRole in decision-making\n\nBudget or implementation intent\n\n🚫 Do not give high scores for:\nFriendly tone\n\nGeneral praise\n\nCuriosity without a business angle\n\nMessages that look like someone just exploring or asking casually\n\nYou are a highly analytical lead scoring AI.\n\nYour task is to score a lead message on a scale of 1 to 10 based on how strong the business intent is — especially regarding purchasing an AI tool for hiring automation.\n\n🎯 Score Breakdown:\n1–3: No buying intent, job seekers, irrelevant.\n\n4–5: Vague curiosity, no real problem, no urgency.\n\n6–7: Some potential, but lacks clarity, budget, or implementation signals.\n\n8–9: Strong interest, well-defined problem, useful role.\n\n10: Clear business pain, urgency, budget-ready, decision-maker message.\n\n✍️ Examples (Few-Shot Learning):\n❌ Example 1 (Score: 3)\n“Can I know more about what your AI tool does? I’m just exploring options for my future projects.”\n\n❌ Example 2 (Score: 5)\n“We are a small HR team just checking out AI automation ideas. Wanted to learn what’s possible.”\n\n✅ Example 3 (Score: 8)\n“We’re an HR SaaS company looking to improve screening automation. Would love a tool to help with candidate filtering and AI scoring. Is yours customizable?”\n\n✅ Example 4 (Score: 10)\n“Our team handles hiring for 500+ clients. We’re seeking an AI solution this quarter to cut manual filtering by 50%. Can your tool integrate with ATS and scale to that level?”\n\n🚀 Now Score This Lead:\nLead Message:\n{{ $json[\"Message\"] }}\n\nReturn:\nOnly the score — a number from 1 to 10. No extra text.\n\n\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        580,
+        -200
+      ],
+      "id": "23b7f253-9790-40c2-a3b7-9bb57f210013"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "append",
+        "application": {
+          "__rl": true,
+          "value": "appFD9XA0HG7MDCTI",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "id"
+        },
+        "addAllFields": "={\n  \"Name\": {{$json[\"Name\"]}},\n  \"Email\": {{$json[\"Email\"]}},\n  \"Message\": {{$json[\"Message\"]}},\n  \"score\": {{$json[\"score\"]}},\n  \"smart_reply\": {{$json[\"smart_reply\"]}},\n  \"reason\": {{$json[\"reason\"]}}\n}\n",
+        "options": {}
+      },
+      "name": "Save to Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "position": [
+        1980,
+        -240
+      ],
+      "id": "dc88e4a1-efc5-45bd-9730-79fae3d97fe3",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "geCgqFk4AnDs9EyC",
+          "name": "Airtable Personal Access Token account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body = $input.item.json.body;\n\nreturn {\n  json: {\n    Name: body.Name,\n    Email: body.Email,\n    Message: body.Message\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        -260
+      ],
+      "id": "cbb156b6-e272-48a0-bcef-7f0f2b441e0a",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "abe620da-7c60-4154-8fc8-3407ddb20feb",
+              "name": "Name",
+              "value": "={{ $json[\"Name\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "9b0bd17f-30c9-4bf7-802d-7b6dbb5f07fc",
+              "name": "Email",
+              "value": "={{ $json[\"Email\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "e8ba545f-f65d-4319-9b7b-e8883664e93d",
+              "name": "Message",
+              "value": "={{ $json[\"Message\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "1ac155ee-697d-47c3-aa5e-e61b71e9a0ee",
+              "name": "score",
+              "value": "={{ $node[\"Cohere Classifier\"].json[\"generations\"][0][\"text\"] | trim }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1660,
+        -220
+      ],
+      "id": "dadef8d8-09c9-4727-8381-25a72a9f6de1",
+      "name": "Input for names and score"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d2671773-8be8-4802-b24a-291f5af590e7",
+              "name": "Name",
+              "value": "={{$json[\"Name\"]}}",
+              "type": "string"
+            },
+            {
+              "id": "e91e9b77-ff3d-4435-8d44-f5c373954414",
+              "name": "Email",
+              "value": "={{$json[\"Email\"]}}",
+              "type": "string"
+            },
+            {
+              "id": "d0e14412-f16a-4f6c-b42a-321c54ed67a9",
+              "name": "Message",
+              "value": "={{$json[\"Message\"]}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        -280
+      ],
+      "id": "caec9100-0199-4127-b77a-2e97f9a5f08b",
+      "name": "input"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1400,
+        -220
+      ],
+      "id": "9008aea8-8738-4a78-b709-2b0b6c6277a2",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cohere Classifier": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Prompt": {
+      "main": [
+        [
+          {
+            "node": "input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Build Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input for names and score": {
+      "main": [
+        [
+          {
+            "node": "Save to Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "input": {
+      "main": [
+        [
+          {
+            "node": "Cohere Classifier",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Input for names and score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a3384cd7-f148-47f2-9cfc-546b534d9620",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e98e3d9bcb89c13761ff36a9e9f089349b16dea8f96a4fb6e00e33388e53bac6"
+  },
+  "id": "E3C5zpaxuLN02cmC",
+  "tags": []
+}
